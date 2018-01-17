@@ -73,6 +73,17 @@ getCreateObjectOptions = {
         },
         {
             'flavor': {
+                'keyName': 'B1_1X2X25'
+            },
+            'template': {
+                'transientGuestFlag': True,
+                'supplementalCreateObjectOptions': {
+                    'flavorKeyName': 'B1_1X2X25'
+                }
+            }
+        },
+        {
+            'flavor': {
                 'keyName': 'B1_1X2X100'
             },
             'template': {

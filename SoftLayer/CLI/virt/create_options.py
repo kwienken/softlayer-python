@@ -31,10 +31,18 @@ def cli(env):
     table.add_row(['datacenter',
                    formatting.listing(datacenters, separator='\n')])
 
-    def _add_flavor_rows(flavor_key, flavor_label, flavor_options):
+    def _add_flavor_rows(flavor_key, flavor_label, flavor_options,
+                         include_transient=False):
         flavors = []
 
         for flavor_option in flavor_options:
+            transient_flag = utils.lookup(flavor_option, 'template', 'transientGuestFlag')
+            if not include_transient and transient_flag:
+                continue
+
+            if include_transient and not transient_flag:
+                continue
+
             flavor_key_name = utils.lookup(flavor_option, 'flavor', 'keyName')
             if not flavor_key_name.startswith(flavor_key):
                 continue
@@ -47,10 +55,13 @@ def cli(env):
 
     if result.get('flavors', None):
         _add_flavor_rows('B1', 'balanced', result['flavors'])
+        _add_flavor_rows('B1', 'balanced - transient', result['flavors'], True)
         _add_flavor_rows('BL1', 'balanced local - hdd', result['flavors'])
         _add_flavor_rows('BL2', 'balanced local - ssd', result['flavors'])
         _add_flavor_rows('C1', 'compute', result['flavors'])
+        _add_flavor_rows('C1', 'compute - transient', result['flavors'], True)
         _add_flavor_rows('M1', 'memory', result['flavors'])
+        _add_flavor_rows('M1', 'memory - transient', result['flavors'], True)
         _add_flavor_rows('AC', 'GPU', result['flavors'])
 
     # CPUs

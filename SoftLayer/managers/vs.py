@@ -300,22 +300,16 @@ class VSManager(utils.IdentifierMixin, object):
         return self.client.call('Virtual_Guest', 'reloadOperatingSystem',
                                 'FORCE', config, id=instance_id)
 
-    def _generate_create_dict(
-            self, cpus=None, memory=None, hourly=True,
-            hostname=None, domain=None, local_disk=True,
-            datacenter=None, os_code=None, image_id=None,
-            dedicated=False, public_vlan=None, private_vlan=None,
-            userdata=None, nic_speed=None, disks=None, post_uri=None,
-            private=False, ssh_keys=None, public_security_groups=None,
-            private_security_groups=None, **kwargs):
-        """Returns a dict appropriate to pass into Virtual_Guest::createObject
+    def _minimum_create_dict(self, flavor=None, cpus=None, memory=None,
+                             local_disk=True, disks=None, os_code=None,
+                             image_id=None, nic_speed=None, private=False,
+                             dedicated=False, host_id=None, transient=False,
+                             datacenter=None, hostname=None, domain=None,
+                             hourly=True):
+        """Returns a dict with the minimum values needed to create a virtual server"""
 
-            See :func:`create_instance` for a list of available options.
-        """
-        required = [hostname, domain]
-
-        flavor = kwargs.get('flavor', None)
-        host_id = kwargs.get('host_id', None)
+        if not all([hostname, domain]):
+            raise ValueError("hostname, and domain are required")
 
         mutually_exclusive = [
             {'os_code': os_code, 'image_id': image_id},
@@ -324,43 +318,69 @@ class VSManager(utils.IdentifierMixin, object):
             {'flavor': flavor, 'dedicated': dedicated},
             {'flavor': flavor, 'host_id': host_id}
         ]
-
-        if not all(required):
-            raise ValueError("hostname, and domain are required")
-
         for mu_ex in mutually_exclusive:
             if all(mu_ex.values()):
                 raise ValueError(
                     'Can only specify one of: %s' % (','.join(mu_ex.keys())))
 
-        data = {
-            "startCpus": cpus,
-            "maxMemory": memory,
-            "hostname": hostname,
-            "domain": domain,
-            "localDiskFlag": local_disk,
-            "hourlyBillingFlag": hourly
+        guest_template = {
+            'datacenter': {
+                'name': datacenter
+            },
+            'hostname': hostname,
+            'domain': domain,
+            'privateNetworkOnlyFlag': private,
+            'transientGuestFlag': transient,
+            'hourlyBillingFlag': hourly
         }
 
-        if flavor:
-            data["supplementalCreateObjectOptions"] = {"flavorKeyName": flavor}
-
         if dedicated and not host_id:
-            data["dedicatedAccountHostOnlyFlag"] = dedicated
+            guest_template['dedicatedAccountHostOnlyFlag'] = dedicated
 
         if host_id:
-            data["dedicatedHost"] = {"id": host_id}
+            guest_template['dedicatedHost'] = {'id': host_id}
 
-        if private:
-            data['privateNetworkOnlyFlag'] = private
+        if flavor:
+            guest_template['supplementalCreateObjectOptions'] = {'flavorKeyName': flavor}
+        else:
+            guest_template['startCpus'] = cpus
+            guest_template['maxMemory'] = memory
+            guest_template['localDiskFlag'] = local_disk
+
+        if nic_speed:
+            guest_template['networkComponents'] = [{'maxSpeed': nic_speed}]
+
+        if disks:
+            guest_template['blockDevices'] = [
+                {'device': '0', 'diskImage': {'capacity': disks[0]}}
+            ]
+
+            for dev_id, disk in enumerate(disks[1:], start=2):
+                guest_template['blockDevices'].append(
+                    {
+                        'device': str(dev_id),
+                        'diskImage': {'capacity': disk}
+                    }
+                )
 
         if image_id:
-            data["blockDeviceTemplateGroup"] = {"globalIdentifier": image_id}
+            guest_template['blockDeviceTemplateGroup'] = {'globalIdentifier': image_id}
         elif os_code:
-            data["operatingSystemReferenceCode"] = os_code
+            guest_template['operatingSystemReferenceCode'] = os_code
 
-        if datacenter:
-            data["datacenter"] = {"name": datacenter}
+        # print guest_template
+
+        return guest_template
+
+    def _generate_create_dict(self, public_vlan=None, private_vlan=None, userdata=None,
+                              post_uri=None, ssh_keys=None, public_security_groups=None,
+                              private_security_groups=None, **kwargs):
+        """Returns a dict appropriate to pass into Virtual_Guest::createObject
+
+            See :func:`create_instance` for a list of available options.
+        """
+
+        data = self._minimum_create_dict(**kwargs)
 
         if public_vlan:
             data.update({
@@ -387,22 +407,6 @@ class VSManager(utils.IdentifierMixin, object):
 
         if userdata:
             data['userData'] = [{'value': userdata}]
-
-        if nic_speed:
-            data['networkComponents'] = [{'maxSpeed': nic_speed}]
-
-        if disks:
-            data['blockDevices'] = [
-                {"device": "0", "diskImage": {"capacity": disks[0]}}
-            ]
-
-            for dev_id, disk in enumerate(disks[1:], start=2):
-                data['blockDevices'].append(
-                    {
-                        "device": str(dev_id),
-                        "diskImage": {"capacity": disk}
-                    }
-                )
 
         if post_uri:
             data['postInstallScriptUri'] = post_uri
@@ -535,7 +539,7 @@ class VSManager(utils.IdentifierMixin, object):
         :param string datacenter: The short name of the data center in which the VS should reside.
         :param string os_code: The operating system to use. Cannot be specified  if image_id is specified.
         :param int image_id: The ID of the image to load onto the server. Cannot be specified if os_code is specified.
-        :param bool dedicated: Flag to indicate if this should be housed on adedicated or shared host (default).
+        :param bool dedicated: Flag to indicate if this should be housed on a dedicated or shared host (default).
                                This will incur a fee on your account.
         :param int public_vlan: The ID of the public VLAN on which you want this VS placed.
         :param list public_security_groups: The list of security group IDs to apply to the public interface
@@ -550,6 +554,7 @@ class VSManager(utils.IdentifierMixin, object):
         :param string tags: tags to set on the VS as a comma separated list
         :param string flavor: The key name of the public virtual server flavor being ordered.
         :param int host_id: The host id of a dedicated host to provision a dedicated host virtual server on.
+        :param bool transient: Flag to indicate if this should be a transient virtual server.
         """
         tags = kwargs.pop('tags', None)
         inst = self.guest.createObject(self._generate_create_dict(**kwargs))

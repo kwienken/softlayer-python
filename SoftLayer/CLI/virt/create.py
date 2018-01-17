@@ -21,7 +21,30 @@ def _update_with_like_args(ctx, _, value):
     env = ctx.ensure_object(environment.Environment)
     vsi = SoftLayer.VSManager(env.client)
     vs_id = helpers.resolve_id(vsi.resolve_ids, value, 'VS')
-    like_details = vsi.get_instance(vs_id)
+    mask = (
+        'hostname,'
+        'domain,'
+        'hourlyBillingFlag,'
+        'datacenter,'
+        '''networkComponents[id, status, speed, maxSpeed, name,
+                             macAddress, primaryIpAddress, port,
+                             primarySubnet,
+                             securityGroupBindings[
+                                securityGroup[id, name]]],'''
+        'userData,'
+        'postInstallScriptUri,'
+        'dedicatedAccountHostOnlyFlag,'
+        'privateNetworkOnlyFlag,'
+        'transientGuestFlag,'
+        '''billingItem[id, orderItem[id, preset.keyName]],'''
+        'maxCpu,'
+        'maxMemory,'
+        'tagReferences[id,tag[name,id]],'
+        'blockDeviceTemplateGroup[id, name, globalIdentifier],'
+        '''operatingSystem[
+            softwareLicense.softwareDescription[referenceCode]],'''
+    )
+    like_details = vsi.get_instance(vs_id, mask=mask)
     like_args = {
         'hostname': like_details['hostname'],
         'domain': like_details['domain'],
@@ -32,6 +55,7 @@ def _update_with_like_args(ctx, _, value):
         'postinstall': like_details.get('postInstallScriptUri'),
         'dedicated': like_details['dedicatedAccountHostOnlyFlag'],
         'private': like_details['privateNetworkOnlyFlag'],
+        'transient': like_details.get('transientGuestFlag', False),
     }
 
     like_args['flavor'] = utils.lookup(like_details,
@@ -80,7 +104,8 @@ def _parse_create_args(client, args):
         "disks": args['disk'],
         "cpus": args.get('cpu', None),
         "memory": args.get('memory', None),
-        "flavor": args.get('flavor', None)
+        "flavor": args.get('flavor', None),
+        "transient": args.get('transient', False)
     }
 
     # The primary disk is included in the flavor and the local_disk flag is not needed
@@ -183,6 +208,9 @@ def _parse_create_args(client, args):
 @click.option('--dedicated/--public',
               is_flag=True,
               help="Create a Dedicated Virtual Server")
+@click.option('--transient',
+              is_flag=True,
+              help="Create a Transient Virtual Server")
 @click.option('--host-id',
               type=click.INT,
               help="Host Id to provision a Dedicated Host Virtual Server onto")
@@ -333,11 +361,11 @@ def _validate_args(env, args):
 
     if all([args['dedicated'], args['flavor']]):
         raise exceptions.ArgumentError(
-            '[-d | --dedicated] not allowed with [-f | --flavor]')
+            '[--dedicated] not allowed with [-f | --flavor]')
 
     if all([args['host_id'], args['flavor']]):
         raise exceptions.ArgumentError(
-            '[-h | --host-id] not allowed with [-f | --flavor]')
+            '[--host-id] not allowed with [-f | --flavor]')
 
     if all([args['userdata'], args['userfile']]):
         raise exceptions.ArgumentError(

@@ -119,6 +119,7 @@ class VirtTests(testing.TestCase):
                           'cpus (standard)': [1, 2, 3, 4],
                           'datacenter': ['ams01', 'dal05'],
                           'flavors (balanced)': ['B1_1X2X25', 'B1_1X2X100'],
+                          'flavors (balanced - transient)': ['B1_1X2X25'],
                           'flavors (balanced local - hdd)': ['BL1_1X2X100'],
                           'flavors (balanced local - ssd)': ['BL2_1X2X100'],
                           'flavors (compute)': ['C1_1X2X25'],
@@ -162,7 +163,9 @@ class VirtTests(testing.TestCase):
                  'hostname': 'host',
                  'startCpus': 2,
                  'operatingSystemReferenceCode': 'UBUNTU_LATEST',
-                 'networkComponents': [{'maxSpeed': '100'}]},)
+                 'networkComponents': [{'maxSpeed': '100'}],
+                 'privateNetworkOnlyFlag': False,
+                 'transientGuestFlag': False},)
         self.assert_called_with('SoftLayer_Virtual_Guest', 'createObject',
                                 args=args)
 
@@ -196,7 +199,9 @@ class VirtTests(testing.TestCase):
             'blockDeviceTemplateGroup': {
                 'globalIdentifier': '0B5DEAF4-643D-46CA-A695-CECBE8832C9D',
             },
-            'networkComponents': [{'maxSpeed': '100'}]
+            'networkComponents': [{'maxSpeed': '100'}],
+            'privateNetworkOnlyFlag': False,
+            'transientGuestFlag': False
         },)
         self.assert_called_with('SoftLayer_Virtual_Guest', 'createObject',
                                 args=args)
@@ -223,12 +228,11 @@ class VirtTests(testing.TestCase):
                  'domain': 'example.com',
                  'hourlyBillingFlag': True,
                  'hostname': 'host',
-                 'startCpus': None,
-                 'maxMemory': None,
-                 'localDiskFlag': None,
                  'supplementalCreateObjectOptions': {'flavorKeyName': 'B1_1X2X25'},
                  'operatingSystemReferenceCode': 'UBUNTU_LATEST',
-                 'networkComponents': [{'maxSpeed': '100'}]},)
+                 'networkComponents': [{'maxSpeed': '100'}],
+                 'privateNetworkOnlyFlag': False,
+                 'transientGuestFlag': False},)
         self.assert_called_with('SoftLayer_Virtual_Guest', 'createObject',
                                 args=args)
 
@@ -262,9 +266,55 @@ class VirtTests(testing.TestCase):
                  'startCpus': 2,
                  'operatingSystemReferenceCode': 'UBUNTU_LATEST',
                  'networkComponents': [{'maxSpeed': '100'}],
-                 'dedicatedHost': {'id': 123}},)
+                 'dedicatedHost': {'id': 123},
+                 'privateNetworkOnlyFlag': False,
+                 'transientGuestFlag': False},)
         self.assert_called_with('SoftLayer_Virtual_Guest', 'createObject',
                                 args=args)
+
+    def test_create_flavor_with_cpu(self):
+        result = self.run_command(['vs', 'create',
+                                   '--flavor=B1_1X2X25',
+                                   '--cpu=2',
+                                   '--domain=example.com',
+                                   '--hostname=host',
+                                   '--os=UBUNTU_LATEST',
+                                   '--datacenter=dal05'])
+        self.assertEqual(result.exit_code, 2)
+        self.assertIsInstance(result.exception, exceptions.ArgumentError)
+
+    def test_create_flavor_with_memory(self):
+        result = self.run_command(['vs', 'create',
+                                   '--flavor=B1_1X2X25',
+                                   '--memory=1',
+                                   '--domain=example.com',
+                                   '--hostname=host',
+                                   '--os=UBUNTU_LATEST',
+                                   '--datacenter=dal05'])
+        self.assertEqual(result.exit_code, 2)
+        self.assertIsInstance(result.exception, exceptions.ArgumentError)
+
+    def test_create_flavor_with_dedicated(self):
+        result = self.run_command(['vs', 'create',
+                                   '--flavor=B1_1X2X25',
+                                   '--domain=example.com',
+                                   '--hostname=host',
+                                   '--os=UBUNTU_LATEST',
+                                   '--datacenter=dal05',
+                                   '--dedicated'])
+        self.assertEqual(result.exit_code, 2)
+        self.assertIsInstance(result.exception, exceptions.ArgumentError)
+
+    def test_create_flavor_with_host_id(self):
+        result = self.run_command(['vs', 'create',
+                                   '--flavor=B1_1X2X25',
+                                   '--domain=example.com',
+                                   '--hostname=host',
+                                   '--os=UBUNTU_LATEST',
+                                   '--datacenter=dal05',
+                                   '--host-id=1'])
+        self.assertEqual(result.exit_code, 2)
+        self.assertIsInstance(result.exception, exceptions.ArgumentError)
 
     @mock.patch('SoftLayer.CLI.formatting.confirm')
     def test_create_like(self, confirm_mock):
@@ -307,7 +357,9 @@ class VirtTests(testing.TestCase):
                  'maxMemory': 1024,
                  'localDiskFlag': False,
                  'operatingSystemReferenceCode': 'UBUNTU_LATEST',
-                 'networkComponents': [{'maxSpeed': 100}]},)
+                 'networkComponents': [{'maxSpeed': 100}],
+                 'privateNetworkOnlyFlag': False,
+                 'transientGuestFlag': False},)
         self.assert_called_with('SoftLayer_Virtual_Guest', 'createObject',
                                 args=args)
 
@@ -345,12 +397,54 @@ class VirtTests(testing.TestCase):
                  'domain': 'test.sftlyr.ws',
                  'hourlyBillingFlag': True,
                  'hostname': 'vs-test-like',
-                 'startCpus': None,
-                 'maxMemory': None,
-                 'localDiskFlag': None,
                  'supplementalCreateObjectOptions': {'flavorKeyName': 'B1_1X2X25'},
                  'operatingSystemReferenceCode': 'UBUNTU_LATEST',
-                 'networkComponents': [{'maxSpeed': 100}]},)
+                 'networkComponents': [{'maxSpeed': 100}],
+                 'privateNetworkOnlyFlag': False,
+                 'transientGuestFlag': False},)
+        self.assert_called_with('SoftLayer_Virtual_Guest', 'createObject',
+                                args=args)
+
+    @mock.patch('SoftLayer.CLI.formatting.confirm')
+    def test_create_like_transient(self, confirm_mock):
+        mock = self.set_mock('SoftLayer_Virtual_Guest', 'getObject')
+        mock.return_value = {
+            'hostname': 'vs-test-like',
+            'domain': 'test.sftlyr.ws',
+            'maxCpu': 2,
+            'maxMemory': 1024,
+            'datacenter': {'name': 'dal05'},
+            'networkComponents': [{'maxSpeed': 100}],
+            'dedicatedAccountHostOnlyFlag': False,
+            'privateNetworkOnlyFlag': False,
+            'billingItem': {'orderItem': {'preset': {'keyName': 'B1_1X2X25'}}},
+            'operatingSystem': {'softwareLicense': {
+                'softwareDescription': {'referenceCode': 'UBUNTU_LATEST'}
+            }},
+            'hourlyBillingFlag': True,
+            'localDiskFlag': False,
+            'userData': {},
+            'transientGuestFlag': True
+        }
+
+        confirm_mock.return_value = True
+        result = self.run_command(['vs', 'create', '--like=123'])
+
+        self.assert_no_fail(result)
+        self.assertEqual(json.loads(result.output),
+                         {'guid': '1a2b3c-1701',
+                          'id': 100,
+                          'created': '2013-08-01 15:23:45'})
+
+        args = ({'datacenter': {'name': 'dal05'},
+                 'domain': 'test.sftlyr.ws',
+                 'hourlyBillingFlag': True,
+                 'hostname': 'vs-test-like',
+                 'supplementalCreateObjectOptions': {'flavorKeyName': 'B1_1X2X25'},
+                 'operatingSystemReferenceCode': 'UBUNTU_LATEST',
+                 'networkComponents': [{'maxSpeed': 100}],
+                 'privateNetworkOnlyFlag': False,
+                 'transientGuestFlag': True},)
         self.assert_called_with('SoftLayer_Virtual_Guest', 'createObject',
                                 args=args)
 

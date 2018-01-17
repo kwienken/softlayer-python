@@ -192,7 +192,10 @@ class VSTests(testing.TestCase):
                   'localDiskFlag': True,
                   'maxMemory': 1024,
                   'hostname': 'server',
-                  'startCpus': 1}],)
+                  'startCpus': 1,
+                  'privateNetworkOnlyFlag': False,
+                  'transientGuestFlag': False,
+                  'datacenter': {'name': None}}],)
         self.assert_called_with('SoftLayer_Virtual_Guest', 'createObjects',
                                 args=args)
         self.assert_called_with('SoftLayer_Virtual_Guest', 'setTags',
@@ -225,6 +228,7 @@ class VSTests(testing.TestCase):
         )
 
         assert_data = {
+            'datacenter': {'name': None},
             'startCpus': 1,
             'maxMemory': 1,
             'hostname': 'test',
@@ -232,6 +236,8 @@ class VSTests(testing.TestCase):
             'localDiskFlag': True,
             'operatingSystemReferenceCode': "STRING",
             'hourlyBillingFlag': True,
+            'privateNetworkOnlyFlag': False,
+            'transientGuestFlag': False,
         }
 
         self.assertEqual(data, assert_data)
@@ -247,6 +253,7 @@ class VSTests(testing.TestCase):
         )
 
         assert_data = {
+            'datacenter': {'name': None},
             'hourlyBillingFlag': False,
             'startCpus': 1,
             'maxMemory': 1,
@@ -254,6 +261,8 @@ class VSTests(testing.TestCase):
             'domain': 'example.com',
             'localDiskFlag': True,
             'operatingSystemReferenceCode': "STRING",
+            'privateNetworkOnlyFlag': False,
+            'transientGuestFlag': False,
         }
 
         self.assertEqual(data, assert_data)
@@ -268,6 +277,7 @@ class VSTests(testing.TestCase):
         )
 
         assert_data = {
+            'datacenter': {'name': None},
             'startCpus': 1,
             'maxMemory': 1,
             'hostname': 'test',
@@ -275,6 +285,8 @@ class VSTests(testing.TestCase):
             'localDiskFlag': True,
             'blockDeviceTemplateGroup': {"globalIdentifier": "45"},
             'hourlyBillingFlag': True,
+            'privateNetworkOnlyFlag': False,
+            'transientGuestFlag': False,
         }
 
         self.assertEqual(data, assert_data)
@@ -290,6 +302,7 @@ class VSTests(testing.TestCase):
         )
 
         assert_data = {
+            'datacenter': {'name': None},
             'startCpus': 1,
             'maxMemory': 1,
             'hostname': 'test',
@@ -298,6 +311,8 @@ class VSTests(testing.TestCase):
             'operatingSystemReferenceCode': "STRING",
             'hourlyBillingFlag': True,
             'dedicatedAccountHostOnlyFlag': True,
+            'privateNetworkOnlyFlag': False,
+            'transientGuestFlag': False,
         }
 
         self.assertEqual(data, assert_data)
@@ -313,6 +328,7 @@ class VSTests(testing.TestCase):
         )
 
         assert_data = {
+            'datacenter': {'name': None},
             'startCpus': 1,
             'maxMemory': 1,
             'hostname': 'test',
@@ -321,6 +337,8 @@ class VSTests(testing.TestCase):
             'operatingSystemReferenceCode': "STRING",
             'hourlyBillingFlag': True,
             'datacenter': {"name": 'sng01'},
+            'privateNetworkOnlyFlag': False,
+            'transientGuestFlag': False,
         }
 
         self.assertEqual(data, assert_data)
@@ -336,6 +354,7 @@ class VSTests(testing.TestCase):
         )
 
         assert_data = {
+            'datacenter': {'name': None},
             'startCpus': 1,
             'maxMemory': 1,
             'hostname': 'test',
@@ -344,6 +363,8 @@ class VSTests(testing.TestCase):
             'operatingSystemReferenceCode': "STRING",
             'hourlyBillingFlag': True,
             'primaryNetworkComponent': {"networkVlan": {"id": 1}},
+            'privateNetworkOnlyFlag': False,
+            'transientGuestFlag': False,
         }
 
         self.assertEqual(data, assert_data)
@@ -359,6 +380,7 @@ class VSTests(testing.TestCase):
         )
 
         assert_data = {
+            'datacenter': {'name': None},
             'startCpus': 1,
             'maxMemory': 1,
             'hostname': 'test',
@@ -367,6 +389,8 @@ class VSTests(testing.TestCase):
             'operatingSystemReferenceCode': "STRING",
             'hourlyBillingFlag': True,
             'primaryBackendNetworkComponent': {"networkVlan": {"id": 1}},
+            'privateNetworkOnlyFlag': False,
+            'transientGuestFlag': False,
         }
 
         self.assertEqual(data, assert_data)
@@ -382,6 +406,7 @@ class VSTests(testing.TestCase):
         )
 
         assert_data = {
+            'datacenter': {'name': None},
             'startCpus': 1,
             'maxMemory': 1,
             'hostname': 'test',
@@ -390,6 +415,8 @@ class VSTests(testing.TestCase):
             'operatingSystemReferenceCode': "STRING",
             'hourlyBillingFlag': True,
             'userData': [{'value': "ICANHAZVSI"}],
+            'privateNetworkOnlyFlag': False,
+            'transientGuestFlag': False,
         }
 
         self.assertEqual(data, assert_data)
@@ -405,6 +432,7 @@ class VSTests(testing.TestCase):
         )
 
         assert_data = {
+            'datacenter': {'name': None},
             'startCpus': 1,
             'maxMemory': 1,
             'hostname': 'test',
@@ -413,6 +441,8 @@ class VSTests(testing.TestCase):
             'operatingSystemReferenceCode': "STRING",
             'hourlyBillingFlag': True,
             'networkComponents': [{'maxSpeed': 9001}],
+            'privateNetworkOnlyFlag': False,
+            'transientGuestFlag': False,
         }
 
         self.assertEqual(data, assert_data)
@@ -429,6 +459,7 @@ class VSTests(testing.TestCase):
         )
 
         assert_data = {
+            'datacenter': {'name': None},
             'startCpus': 1,
             'maxMemory': 1,
             'hostname': 'test',
@@ -438,6 +469,7 @@ class VSTests(testing.TestCase):
             'privateNetworkOnlyFlag': True,
             'hourlyBillingFlag': True,
             'networkComponents': [{'maxSpeed': 9001}],
+            'transientGuestFlag': False,
         }
 
         self.assertEqual(data, assert_data)
@@ -453,6 +485,7 @@ class VSTests(testing.TestCase):
         )
 
         assert_data = {
+            'datacenter': {'name': None},
             'startCpus': 1,
             'maxMemory': 1,
             'hostname': 'test',
@@ -461,6 +494,8 @@ class VSTests(testing.TestCase):
             'operatingSystemReferenceCode': "STRING",
             'hourlyBillingFlag': True,
             'postInstallScriptUri': 'https://example.com/boostrap.sh',
+            'privateNetworkOnlyFlag': False,
+            'transientGuestFlag': False,
         }
 
         self.assertEqual(data, assert_data)
@@ -476,6 +511,7 @@ class VSTests(testing.TestCase):
         )
 
         assert_data = {
+            'datacenter': {'name': None},
             'startCpus': 1,
             'maxMemory': 1,
             'hostname': 'test',
@@ -484,6 +520,8 @@ class VSTests(testing.TestCase):
             'operatingSystemReferenceCode': "STRING",
             'hourlyBillingFlag': True,
             'sshKeys': [{'id': 543}],
+            'privateNetworkOnlyFlag': False,
+            'transientGuestFlag': False,
         }
 
         self.assertEqual(data, assert_data)
@@ -536,6 +574,29 @@ class VSTests(testing.TestCase):
 
         self.assertTrue(data.get('blockDevices'))
         self.assertEqual(data['blockDevices'], assert_data['blockDevices'])
+
+    def test_generate_transient(self):
+        data = self.vs._generate_create_dict(
+            datacenter='dal05',
+            hostname='test',
+            domain='example.com',
+            flavor='B1_1X2X25',
+            os_code="STRING",
+            transient=True
+        )
+
+        assert_data = {
+            'datacenter': {'name': 'dal05'},
+            'hostname': 'test',
+            'domain': 'example.com',
+            'privateNetworkOnlyFlag': False,
+            'transientGuestFlag': True,
+            'hourlyBillingFlag': True,
+            'supplementalCreateObjectOptions': {'flavorKeyName': 'B1_1X2X25'},
+            'operatingSystemReferenceCode': "STRING",
+        }
+
+        self.assertEqual(data, assert_data)
 
     def test_change_port_speed_public(self):
         result = self.vs.change_port_speed(1, True, 100)
